@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中同學 40 週年同學會</title>
+    <style>
+        /* ===== 全域設定 ===== */
+        :root {
+            --primary: #2c3e50;
+            --accent: #e67e22;
+            --accent-light: #f39c12;
+            --bg: #faf8f5;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --text-light: #666666;
+            --border: #e0ddd8;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            /* BBS 風格 */
+            --bbs-bg: #1a1a2e;
+            --bbs-green: #00ff41;
+            --bbs-cyan: #00e5ff;
+            --bbs-yellow: #ffd700;
+            --bbs-white: #e0e0e0;
+            --bbs-border: #333366;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', '微軟正黑體', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        /* ===== 導覽列 ===== */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            padding: 0 2rem;
+            transition: all 0.3s ease;
+        }
+        .navbar.scrolled { box-shadow: 0 2px 20px rgba(0,0,0,0.15); }
+        .nav-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+        }
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+            letter-spacing: 0.05em;
+        }
+        .nav-logo span { color: var(--accent); }
+        .nav-links { display: flex; gap: 0.5rem; list-style: none; }
+        .nav-links a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+        }
+        .nav-links a:hover, .nav-links a.active {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 4px;
+        }
+        .hamburger span {
+            width: 24px; height: 2px;
+            background: #fff;
+            transition: 0.3s;
+            border-radius: 2px;
+        }
+
+        /* ===== Hero 首頁 ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 50%, #e67e22 100%);
+            position: relative;
+            overflow: hidden;
+            padding: 2rem;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(230, 126, 34, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(52, 152, 219, 0.3) 0%, transparent 50%);
+        }
+        .hero-content { position: relative; z-index: 1; }
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            color: #fff;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+            text-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        }
+        .hero .subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            color: rgba(255,255,255,0.9);
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+        }
+        .hero .year-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            padding: 0.5rem 2rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .hero .countdown {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        .countdown-item {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            min-width: 90px;
+            text-align: center;
+        }
+        .countdown-item .num {
+            display: block;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+        .countdown-item .label {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            margin-top: 4px;
+        }
+        .hero .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.6);
+            font-size: 0.9rem;
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        /* ===== 通用區段 ===== */
+        .section {
+            padding: 5rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section-title {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        .section-title h2 {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+        .section-title .divider {
+            width: 60px;
+            height: 3px;
+            background: var(--accent);
+            margin: 0.8rem auto;
+            border-radius: 2px;
+        }
+        .section-title p {
+            color: var(--text-light);
+            font-size: 1.05rem;
+        }
+
+        /* ===== 活動資訊 ===== */
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+        .event-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .event-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        }
+        .event-card .tag {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            font-size: 0.8rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .event-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary);
+        }
+        .event-card .info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+        .event-card .info-row .icon { font-size: 1.1rem; width: 20px; text-align: center; }
+        .event-card .desc {
+            margin-top: 1rem;
+            color: var(--text-light);
+            font-size: 0.95rem;
+            border-top: 1px solid var(--border);
+            padding-top: 1rem;
+        }
+
+        /* ===== 報名區 ===== */
+        .signup-section {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            padding: 5rem 2rem;
+        }
+        .signup-section .section-title h2 { color: #fff; }
+        .signup-section .section-title p { color: rgba(255,255,255,0.7); }
+        .signup-section .section-title .divider { background: var(--accent); }
+
+        .signup-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--primary);
+            font-size: 0.95rem;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: #fafafa;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #fff;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .btn-primary {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            padding: 0.85rem 2.5rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            font-family: inherit;
+        }
+        .btn-primary:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
+        }
+        .signup-note {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        .signup-stats {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            text-align: center;
+            color: #fff;
+        }
+        .stat-item .stat-num {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .stat-item .stat-label {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ===== BBS 佈告欄 ===== */
+        .bbs-section {
+            background: var(--bbs-bg);
+            padding: 4rem 2rem;
+        }
+        .bbs-container {
+            max-width: 900px;
+            margin: 0 auto;
+            border: 2px solid var(--bbs-border);
+            border-radius: 0;
+            overflow: hidden;
+            font-family: 'Courier New', 'Noto Sans Mono', monospace;
+        }
+        .bbs-header {
+            background: #16213e;
+            border-bottom: 2px solid var(--bbs-border);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .bbs-header .bbs-title {
+            color: var(--bbs-cyan);
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .bbs-header .bbs-info {
+            color: var(--bbs-white);
+            font-size: 0.8rem;
+            opacity: 0.7;
+        }
+        .bbs-toolbar {
+            background: #0f3460;
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            gap: 1rem;
+            border-bottom: 1px solid var(--bbs-border);
+            flex-wrap: wrap;
+        }
+        .bbs-toolbar button {
+            background: none;
+            border: 1px solid var(--bbs-green);
+            color: var(--bbs-green);
+            padding: 0.3rem 1rem;
+            font-family: inherit;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .bbs-toolbar button:hover, .bbs-toolbar button.active {
+            background: var(--bbs-green);
+            color: var(--bbs-bg);
+        }
+        .bbs-board-list {
+            padding: 0;
+        }
+        .bbs-board-header {
+            display: grid;
+            grid-template-columns: 60px 80px 1fr 140px 80px;
+            padding: 0.5rem 1.5rem;
+            background: #0f3460;
+            color: var(--bbs-yellow);
+            font-size: 0.85rem;
+            font-weight: 700;
+            border-bottom: 1px solid var(--bbs-border);
+        }
+        .bbs-post {
+            display: grid;
+            grid-template-columns: 60px 80px 1fr 140px 80px;
+            padding: 0.6rem 1.5rem;
+            color: var(--bbs-white);
+            font-size: 0.9rem;
+            border-bottom: 1px solid rgba(51, 51, 102, 0.5);
+            cursor: pointer;
+            transition: background 0.2s;
+            align-items: center;
+        }
+        .bbs-post:hover {
+            background: rgba(0, 229, 255, 0.05);
+        }
+        .bbs-post .post-id { color: var(--bbs-green); opacity: 0.7; }
+        .bbs-post .post-push {
+            text-align: center;
+            font-weight: 700;
+        }
+        .bbs-post .post-push.hot { color: #ff4757; }
+        .bbs-post .post-push.warm { color: var(--bbs-yellow); }
+        .bbs-post .post-push.normal { color: var(--bbs-green); }
+        .bbs-post .post-title { color: var(--bbs-white); }
+        .bbs-post .post-title .category {
+            color: var(--bbs-cyan);
+            margin-right: 0.5rem;
+        }
+        .bbs-post .post-author { color: var(--bbs-green); font-size: 0.85rem; }
+        .bbs-post .post-date { color: var(--bbs-white); opacity: 0.5; font-size: 0.85rem; }
+
+        /* BBS 文章內容 */
+        .bbs-article {
+            display: none;
+            padding: 1.5rem;
+            color: var(--bbs-white);
+            min-height: 300px;
+        }
+        .bbs-article.show { display: block; }
+        .bbs-article-header {
+            border-bottom: 1px solid var(--bbs-border);
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+        }
+        .bbs-article-header .art-field {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.3rem;
+        }
+        .bbs-article-header .art-label { color: var(--bbs-cyan); min-width: 60px; }
+        .bbs-article-header .art-value { color: var(--bbs-white); }
+        .bbs-article-body {
+            white-space: pre-wrap;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+        .bbs-article-comments {
+            border-top: 1px solid var(--bbs-border);
+            padding-top: 1rem;
+        }
+        .bbs-comment {
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+        .bbs-comment .push-tag {
+            color: var(--bbs-yellow);
+            margin-right: 0.3rem;
+        }
+        .bbs-comment .push-userid {
+            color: var(--bbs-green);
+            margin-right: 0.5rem;
+        }
+        .bbs-comment .push-content { color: var(--bbs-white); }
+
+        /* BBS 發文區 */
+        .bbs-compose {
+            display: none;
+            padding: 1.5rem;
+        }
+        .bbs-compose.show { display: block; }
+        .bbs-compose label {
+            display: block;
+            color: var(--bbs-cyan);
+            margin-bottom: 0.3rem;
+            font-size: 0.9rem;
+        }
+        .bbs-compose input, .bbs-compose textarea, .bbs-compose select {
+            width: 100%;
+            padding: 0.6rem;
+            margin-bottom: 1rem;
+            background: #16213e;
+            border: 1px solid var(--bbs-border);
+            color: var(--bbs-white);
+            font-family: inherit;
+            font-size: 0.95rem;
+            border-radius: 0;
+        }
+        .bbs-compose textarea { min-height: 200px; resize: vertical; }
+        .bbs-compose .bbs-submit {
+            background: var(--bbs-green);
+            color: var(--bbs-bg);
+            border: none;
+            padding: 0.6rem 2rem;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        .bbs-compose .bbs-submit:hover { opacity: 0.85; }
+        .bbs-status {
+            padding: 0.5rem 1.5rem;
+            background: #0a0a1a;
+            color: var(--bbs-green);
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* ===== 照片回憶區 ===== */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        .gallery-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.3s;
+        }
+        .gallery-card:hover { transform: translateY(-4px); }
+        .gallery-card .photo-placeholder {
+            width: 100%;
+            height: 220px;
+            background: linear-gradient(135deg, #ddd, #eee);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 0.95rem;
+            gap: 0.5rem;
+        }
+        .gallery-card .photo-placeholder .icon { font-size: 2.5rem; }
+        .gallery-card .photo-info {
+            padding: 1rem 1.25rem;
+        }
+        .gallery-card .photo-info h4 {
+            font-size: 1rem;
+            margin-bottom: 0.3rem;
+            color: var(--primary);
+        }
+        .gallery-card .photo-info p {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        .gallery-card .photo-info .photo-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
+        .upload-area {
+            border: 3px dashed var(--border);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: rgba(230, 126, 34, 0.03);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 2rem;
+        }
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: rgba(230, 126, 34, 0.06);
+        }
+        .upload-area .upload-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+        .upload-area h3 { font-size: 1.2rem; color: var(--primary); margin-bottom: 0.3rem; }
+        .upload-area p { color: var(--text-light); font-size: 0.95rem; }
+
+        .upload-preview {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .upload-preview.show { display: grid; }
+        .preview-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            background: #eee;
+        }
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .preview-item .remove-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Lightbox */
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .lightbox.show { display: flex; }
+        .lightbox img {
+            max-width: 90%;
+            max-height: 85vh;
+            border-radius: 8px;
+        }
+        .lightbox .close-lb {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* ===== 聯絡資訊 ===== */
+        .contact-section {
+            background: var(--primary);
+            padding: 4rem 2rem;
+            color: #fff;
+        }
+        .contact-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+        }
+        .contact-card {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .contact-card .c-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+        .contact-card h4 { font-size: 1.1rem; margin-bottom: 0.5rem; }
+        .contact-card p {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.95rem;
+        }
+        .contact-card a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        /* ===== Footer ===== */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: #1a252f;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.85rem;
+        }
+
+        /* ===== Toast 通知 ===== */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2ecc71;
+            color: #fff;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 3000;
+            transition: transform 0.4s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ===== 手機版 RWD ===== */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 64px;
+                left: 0;
+                width: 100%;
+                background: rgba(44, 62, 80, 0.98);
+                flex-direction: column;
+                padding: 1rem;
+            }
+            .nav-links.open { display: flex; }
+            .hamburger { display: flex; }
+            .form-row { grid-template-columns: 1fr; }
+            .bbs-board-header, .bbs-post {
+                grid-template-columns: 50px 1fr 80px;
+            }
+            .bbs-board-header .hide-mobile, .bbs-post .hide-mobile { display: none; }
+            .signup-stats { gap: 1.5rem; }
+            .countdown-item .num { font-size: 2rem; }
+            .section { padding: 3rem 1.25rem; }
+        }
+
+        /* ===== 動畫 ===== */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s, transform 0.6s;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 頁籤切換 */
+        .tab-nav {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            padding: 0.6rem 1.5rem;
+            border: 2px solid var(--border);
+            background: var(--card-bg);
+            border-radius: 50px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .tab-btn.active, .tab-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(230, 126, 34, 0.05);
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;600;700&family=Noto+Sans+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!-- ===== 導覽列 ===== -->
+<nav class="navbar" id="navbar">
+    <div class="nav-inner">
+        <a href="#home" class="nav-logo"><span>40</span> 週年同學會</a>
+        <button class="hamburger" id="hamburger" aria-label="選單">
+            <span></span><span></span><span></span>
+        </button>
+        <ul class="nav-links" id="navLinks">
+            <li><a href="#home">首頁</a></li>
+            <li><a href="#events">活動資訊</a></li>
+            <li><a href="#signup">我要報名</a></li>
+            <li><a href="#bbs">討論區</a></li>
+            <li><a href="#gallery">照片回憶</a></li>
+            <li><a href="#contact">聯絡我們</a></li>
+        </ul>
+    </div>
+</nav>
+
+<!-- ===== Hero 首頁 ===== -->
+<section class="hero" id="home">
+    <div class="hero-content">
+        <div class="year-badge">1986 — 2026</div>
+        <h1>高中同學 40 週年</h1>
+        <p class="subtitle">四十年的友誼，一輩子的回憶</p>
+        <div class="countdown" id="countdown">
+            <div class="countdown-item"><span class="num" id="cd-days">--</span><span class="label">天</span></div>
+            <div class="countdown-item"><span class="num" id="cd-hours">--</span><span class="label">時</span></div>
+            <div class="countdown-item"><span class="num" id="cd-mins">--</span><span class="label">分</span></div>
+            <div class="countdown-item"><span class="num" id="cd-secs">--</span><span class="label">秒</span></div>
+        </div>
+    </div>
+    <div class="scroll-hint">▼ 向下瀏覽</div>
+</section>
+
+<!-- ===== 活動資訊 ===== -->
+<section class="section" id="events">
+    <div class="section-title fade-in">
+        <h2>活動資訊</h2>
+        <div class="divider"></div>
+        <p>精心安排的聚會活動，讓我們重溫當年美好時光</p>
+    </div>
+    <div class="events-grid">
+        <div class="event-card fade-in">
+            <span class="tag">主場聚會</span>
+            <h3>40 週年同學會晚宴</h3>
+            <div class="info-row"><span class="icon">📅</span> 2026 年 6 月 20 日（六）18:00</div>
+            <div class="info-row"><span class="icon">📍</span> 台北圓山大飯店 金龍廳</div>
+            <div class="info-row"><span class="icon">💰</span> 每人 NT$ 2,000（含餐飲）</div>
+            <div class="info-row"><span class="icon">👥</span> 預計 80 人</div>
+            <div class="desc">歡迎攜伴參加！當晚安排懷舊影片播放、抽獎、卡拉OK，讓我們一起回到青春年代。</div>
+        </div>
+        <div class="event-card fade-in">
+            <span class="tag" style="background:#3498db">戶外活動</span>
+            <h3>陽明山健行踏青</h3>
+            <div class="info-row"><span class="icon">📅</span> 2026 年 6 月 21 日（日）08:00</div>
+            <div class="info-row"><span class="icon">📍</span> 陽明山國家公園 冷水坑</div>
+            <div class="info-row"><span class="icon">💰</span> 免費（交通自理）</div>
+            <div class="info-row"><span class="icon">👥</span> 不限人數</div>
+            <div class="desc">隔天一早的輕鬆健行，邊走邊聊，適合全家參加。路線平緩，約 2 小時路程。</div>
+        </div>
+        <div class="event-card fade-in">
+            <span class="tag" style="background:#2ecc71">線上聚會</span>
+            <h3>海外同學視訊聯歡</h3>
+            <div class="info-row"><span class="icon">📅</span> 2026 年 6 月 20 日（六）20:30</div>
+            <div class="info-row"><span class="icon">📍</span> 線上 Google Meet</div>
+            <div class="info-row"><span class="icon">💰</span> 免費</div>
+            <div class="info-row"><span class="icon">🌏</span> 海外同學專屬</div>
+            <div class="desc">在海外無法到場的同學也能透過視訊一起參與！晚宴現場將連線直播，讓大家一起同樂。</div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 報名區 ===== -->
+<section class="signup-section" id="signup">
+    <div class="section-title fade-in">
+        <h2>我要報名</h2>
+        <div class="divider"></div>
+        <p>填寫以下資料完成報名，期待與你相見！</p>
+    </div>
+    <div class="signup-stats fade-in">
+        <div class="stat-item"><span class="stat-num" id="signupCount">42</span><span class="stat-label">已報名人數</span></div>
+        <div class="stat-item"><span class="stat-num">80</span><span class="stat-label">目標人數</span></div>
+        <div class="stat-item"><span class="stat-num" id="daysLeft">--</span><span class="stat-label">報名倒數天</span></div>
+    </div>
+    <div class="signup-container fade-in">
+        <form id="signupForm" onsubmit="handleSignup(event)">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>姓名 *</label>
+                    <input type="text" id="name" required placeholder="你的姓名">
+                </div>
+                <div class="form-group">
+                    <label>當年班級</label>
+                    <select id="classNum">
+                        <option value="">請選擇</option>
+                        <option>一年一班</option>
+                        <option>一年二班</option>
+                        <option>一年三班</option>
+                        <option>一年四班</option>
+                        <option>一年五班</option>
+                        <option>一年六班</option>
+                        <option>一年七班</option>
+                        <option>一年八班</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>手機號碼 *</label>
+                    <input type="tel" id="phone" required placeholder="0912-345-678">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="your@email.com">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>參加活動 *</label>
+                <select id="event" required>
+                    <option value="">請選擇活動</option>
+                    <option value="dinner">40 週年同學會晚宴（6/20）</option>
+                    <option value="hike">陽明山健行踏青（6/21）</option>
+                    <option value="online">海外同學視訊聯歡（6/20）</option>
+                    <option value="all">以上全部參加</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>攜伴人數</label>
+                    <select id="guests">
+                        <option value="0">無</option>
+                        <option value="1">1 位</option>
+                        <option value="2">2 位</option>
+                        <option value="3">3 位</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>飲食需求</label>
+                    <select id="diet">
+                        <option value="none">無特殊需求</option>
+                        <option value="veg">素食</option>
+                        <option value="halal">清真</option>
+                        <option value="allergy">食物過敏</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>給老同學的話</label>
+                <textarea id="message" rows="3" placeholder="想對大家說什麼呢？"></textarea>
+            </div>
+            <button type="submit" class="btn-primary">確認報名 🎉</button>
+            <p class="signup-note">報名資料僅供聚會籌備使用，不會外洩。</p>
+        </form>
+    </div>
+</section>
+
+<!-- ===== BBS 討論區 ===== -->
+<section class="bbs-section" id="bbs">
+    <div class="section-title fade-in" style="max-width:900px;margin:0 auto 2rem;">
+        <h2 style="color:var(--bbs-cyan);font-family:'Courier New',monospace;">★ 同學會 BBS 電子佈告欄 ★</h2>
+        <div class="divider" style="background:var(--bbs-green);"></div>
+        <p style="color:var(--bbs-white);opacity:0.7;">還記得當年的 BBS 嗎？在這裡盡情留言吧！</p>
+    </div>
+    <div class="bbs-container fade-in">
+        <div class="bbs-header">
+            <span class="bbs-title">【 同學會 BBS 】看板：ClassOf86</span>
+            <span class="bbs-info">線上人數：<span id="bbsOnline">38</span></span>
+        </div>
+        <div class="bbs-toolbar">
+            <button class="active" onclick="bbsShowList()">看板列表</button>
+            <button onclick="bbsShowCompose()">發表文章 ✎</button>
+            <button onclick="bbsShowList()">重新整理</button>
+        </div>
+        <!-- 文章列表 -->
+        <div class="bbs-board-list" id="bbsList">
+            <div class="bbs-board-header">
+                <span>編號</span>
+                <span>推</span>
+                <span>標題</span>
+                <span class="hide-mobile">作者</span>
+                <span class="hide-mobile">日期</span>
+            </div>
+            <div class="bbs-post" onclick="bbsShowArticle(0)">
+                <span class="post-id">1</span>
+                <span class="post-push hot">爆</span>
+                <span class="post-title"><span class="category">[公告]</span>40週年同學會確定舉辦！</span>
+                <span class="post-author hide-mobile">班長小明</span>
+                <span class="post-date hide-mobile">04/01</span>
+            </div>
+            <div class="bbs-post" onclick="bbsShowArticle(1)">
+                <span class="post-id">2</span>
+                <span class="post-push warm">12</span>
+                <span class="post-title"><span class="category">[閒聊]</span>大家還記得福利社的紅茶嗎</span>
+                <span class="post-author hide-mobile">美芳</span>
+                <span class="post-date hide-mobile">04/01</span>
+            </div>
+            <div class="bbs-post" onclick="bbsShowArticle(2)">
+                <span class="post-id">3</span>
+                <span class="post-push normal">5</span>
+                <span class="post-title"><span class="category">[問題]</span>有人知道阿國現在在哪嗎？</span>
+                <span class="post-author hide-mobile">志偉</span>
+                <span class="post-date hide-mobile">03/30</span>
+            </div>
+            <div class="bbs-post" onclick="bbsShowArticle(3)">
+                <span class="post-id">4</span>
+                <span class="post-push warm">8</span>
+                <span class="post-title"><span class="category">[回憶]</span>翻到了畢業旅行的照片！</span>
+                <span class="post-author hide-mobile">淑芬</span>
+                <span class="post-date hide-mobile">03/29</span>
+            </div>
+            <div class="bbs-post" onclick="bbsShowArticle(4)">
+                <span class="post-id">5</span>
+                <span class="post-push normal">3</span>
+                <span class="post-title"><span class="category">[揪團]</span>聚會前先來個小型聚餐？</span>
+                <span class="post-author hide-mobile">建宏</span>
+                <span class="post-date hide-mobile">03/28</span>
+            </div>
+        </div>
+        <!-- 文章內容 -->
+        <div class="bbs-article" id="bbsArticle"></div>
+        <!-- 發文區 -->
+        <div class="bbs-compose" id="bbsCompose">
+            <label>分類</label>
+            <select id="bbsCategory">
+                <option>[閒聊]</option>
+                <option>[回憶]</option>
+                <option>[問題]</option>
+                <option>[揪團]</option>
+                <option>[分享]</option>
+            </select>
+            <label>暱稱</label>
+            <input type="text" id="bbsNickname" placeholder="輸入你的暱稱">
+            <label>標題</label>
+            <input type="text" id="bbsSubject" placeholder="文章標題">
+            <label>內容</label>
+            <textarea id="bbsBody" placeholder="在這裡輸入你的文章..."></textarea>
+            <button class="bbs-submit" onclick="bbsPost()">發表文章</button>
+        </div>
+        <div class="bbs-status">
+            <span>★ 按方向鍵可上下選擇文章</span>
+            <span id="bbsTime"></span>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 照片回憶區 ===== -->
+<section class="section" id="gallery">
+    <div class="section-title fade-in">
+        <h2>照片回憶</h2>
+        <div class="divider"></div>
+        <p>上傳你珍藏的老照片，一起回味青春歲月</p>
+    </div>
+
+    <!-- 上傳區域 -->
+    <div class="upload-area fade-in" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📸</div>
+        <h3>點擊或拖放照片上傳</h3>
+        <p>支援 JPG、PNG、GIF 格式，也可以上傳短影片（MP4）</p>
+        <input type="file" id="fileInput" hidden multiple accept="image/*,video/mp4">
+    </div>
+    <div class="upload-preview" id="uploadPreview"></div>
+
+    <!-- 頁籤 -->
+    <div class="tab-nav">
+        <button class="tab-btn active" onclick="filterGallery('all', this)">全部</button>
+        <button class="tab-btn" onclick="filterGallery('school', this)">在校時期</button>
+        <button class="tab-btn" onclick="filterGallery('trip', this)">畢業旅行</button>
+        <button class="tab-btn" onclick="filterGallery('reunion', this)">歷屆聚會</button>
+    </div>
+
+    <!-- 照片牆 -->
+    <div class="gallery-grid" id="galleryGrid">
+        <div class="gallery-card fade-in" data-category="school">
+            <div class="photo-placeholder" style="background:linear-gradient(135deg,#a8d8ea,#aa96da);">
+                <span class="icon">🏫</span>
+                <span>1986 校門口合照</span>
+            </div>
+            <div class="photo-info">
+                <h4>開學日校門口合照</h4>
+                <p>還記得第一天到學校的緊張嗎？</p>
+                <div class="photo-meta">
+                    <span>📅 1986 年 9 月</span>
+                    <span>❤️ 15 讚</span>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-card fade-in" data-category="trip">
+            <div class="photo-placeholder" style="background:linear-gradient(135deg,#fcbad3,#f6d365);">
+                <span class="icon">🚌</span>
+                <span>畢業旅行墾丁</span>
+            </div>
+            <div class="photo-info">
+                <h4>畢業旅行 — 墾丁大合照</h4>
+                <p>三天兩夜的歡樂時光</p>
+                <div class="photo-meta">
+                    <span>📅 1989 年 3 月</span>
+                    <span>❤️ 23 讚</span>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-card fade-in" data-category="school">
+            <div class="photo-placeholder" style="background:linear-gradient(135deg,#c3cfe2,#f5f7fa);">
+                <span class="icon">🎵</span>
+                <span>合唱比賽</span>
+            </div>
+            <div class="photo-info">
+                <h4>班際合唱比賽冠軍！</h4>
+                <p>三班的驕傲，唱了「外婆的澎湖灣」</p>
+                <div class="photo-meta">
+                    <span>📅 1987 年 12 月</span>
+                    <span>❤️ 18 讚</span>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-card fade-in" data-category="reunion">
+            <div class="photo-placeholder" style="background:linear-gradient(135deg,#ffecd2,#fcb69f);">
+                <span class="icon">🎂</span>
+                <span>20 週年同學會</span>
+            </div>
+            <div class="photo-info">
+                <h4>20 週年同學會</h4>
+                <p>2006 年的重聚，大家都變了好多！</p>
+                <div class="photo-meta">
+                    <span>📅 2006 年 6 月</span>
+                    <span>❤️ 31 讚</span>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-card fade-in" data-category="reunion">
+            <div class="photo-placeholder" style="background:linear-gradient(135deg,#a1c4fd,#c2e9fb);">
+                <span class="icon">🥂</span>
+                <span>30 週年同學會</span>
+            </div>
+            <div class="photo-info">
+                <h4>30 週年同學會</h4>
+                <p>十年不見依舊熟悉的面孔</p>
+                <div class="photo-meta">
+                    <span>📅 2016 年 7 月</span>
+                    <span>❤️ 28 讚</span>
+                </div>
+            </div>
+        </div>
+        <div class="gallery-card fade-in" data-category="school">
+            <div class="photo-placeholder" style="background:linear-gradient(135deg,#d4fc79,#96e6a1);">
+                <span class="icon">⚽</span>
+                <span>運動會</span>
+            </div>
+            <div class="photo-info">
+                <h4>校慶運動會大隊接力</h4>
+                <p>跑最後一棒的阿國衝過終點的瞬間</p>
+                <div class="photo-meta">
+                    <span>📅 1988 年 11 月</span>
+                    <span>❤️ 20 讚</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 聯絡資訊 ===== -->
+<section class="contact-section" id="contact">
+    <div class="section-title fade-in" style="max-width:800px;margin:0 auto 2.5rem;">
+        <h2 style="color:#fff;">聯絡我們</h2>
+        <div class="divider"></div>
+        <p style="color:rgba(255,255,255,0.7);">有任何問題歡迎聯繫籌備小組</p>
+    </div>
+    <div class="contact-grid fade-in">
+        <div class="contact-card">
+            <div class="c-icon">📞</div>
+            <h4>總召集人</h4>
+            <p>王小明（班長）</p>
+            <p><a href="tel:0912345678">0912-345-678</a></p>
+        </div>
+        <div class="contact-card">
+            <div class="c-icon">✉️</div>
+            <h4>Email 聯繫</h4>
+            <p>同學會籌備信箱</p>
+            <p><a href="mailto:reunion86@example.com">reunion86@example.com</a></p>
+        </div>
+        <div class="contact-card">
+            <div class="c-icon">💬</div>
+            <h4>LINE 群組</h4>
+            <p>掃描 QR Code 加入</p>
+            <p><a href="#">加入同學會群組</a></p>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <p>© 2026 高中同學 40 週年同學會 ｜ 用心製作，期待與你相聚</p>
+</footer>
+
+<!-- Toast 通知 -->
+<div class="toast" id="toast"></div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+    <button class="close-lb" onclick="closeLightbox()">✕</button>
+    <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+// ===== BBS 資料 =====
+const bbsArticles = [
+    {
+        id: 1, category: '[公告]', title: '40週年同學會確定舉辦！',
+        author: '班長小明', date: '2026/04/01',
+        body: `各位親愛的同學們：
+
+大家好！我是當年的班長小明。
+
+經過籌備小組多次討論，我們的 40 週年同學會終於確定了！
+
+時間：2026 年 6 月 20 日（六）18:00
+地點：台北圓山大飯店 金龍廳
+費用：每人 NT$ 2,000（含餐飲）
+
+歡迎攜伴參加，請盡快報名！
+名額有限，額滿為止。
+
+讓我們一起回到那段最美好的青春歲月！
+
+                                            班長 小明 敬上`,
+        comments: [
+            { tag: '推', user: '美芳', content: '太棒了！期待見到大家！' },
+            { tag: '推', user: '志偉', content: '40年了！一定要去！' },
+            { tag: '推', user: '淑芬', content: '已報名+1，超期待' },
+            { tag: '→', user: '建宏', content: '圓山大飯店！班長大手筆' },
+            { tag: '推', user: '阿華', content: '從美國飛回來參加！' },
+        ]
+    },
+    {
+        id: 2, category: '[閒聊]', title: '大家還記得福利社的紅茶嗎',
+        author: '美芳', date: '2026/04/01',
+        body: `不知道為什麼，今天突然好想念高中福利社的那杯紅茶。
+
+甜甜的、涼涼的、一杯才五塊錢。
+每次下課鐘一響，大家就衝去排隊。
+
+還有旁邊賣的蔥油餅，配紅茶簡直絕配！
+
+你們還記得嗎？有沒有人知道那個紅茶的牌子啊 XD`,
+        comments: [
+            { tag: '推', user: '志偉', content: '記得！還有那個阿姨每次都會多給一點' },
+            { tag: '推', user: '班長小明', content: '我記得是統一麥香紅茶吧？' },
+            { tag: '→', user: '淑芬', content: '不是啦～是那種大桶泡的' },
+            { tag: '推', user: '建宏', content: '看到這篇肚子餓了...' },
+        ]
+    },
+    {
+        id: 3, category: '[問題]', title: '有人知道阿國現在在哪嗎？',
+        author: '志偉', date: '2026/03/30',
+        body: `想找當年隔壁座的阿國，畢業之後就失聯了。
+
+他好像家住永和那邊，姓陳。
+運動會跑大隊接力超快的那個。
+
+如果有人有他的聯絡方式，拜託跟我說一下！
+想邀他一起來參加同學會。`,
+        comments: [
+            { tag: '推', user: '淑芬', content: '我好像在 Facebook 看過他，我找找' },
+            { tag: '→', user: '美芳', content: '是不是後來去當兵就沒消息了？' },
+        ]
+    },
+    {
+        id: 4, category: '[回憶]', title: '翻到了畢業旅行的照片！',
+        author: '淑芬', date: '2026/03/29',
+        body: `整理家裡的時候翻到一本舊相簿，
+裡面竟然有我們畢業旅行去墾丁的照片！
+
+在沙灘上的大合照、晚上在民宿打牌、
+還有志偉被海浪沖走拖鞋的經典畫面 😂
+
+我會掃描上傳到照片區，大家敬請期待！
+
+P.S. 大家都好年輕好青澀啊...`,
+        comments: [
+            { tag: '推', user: '志偉', content: '那雙拖鞋是我最愛的啊！！！' },
+            { tag: '推', user: '班長小明', content: '快上傳！好期待' },
+            { tag: '推', user: '美芳', content: '天啊好懷念墾丁那三天' },
+            { tag: '→', user: '建宏', content: '我記得晚上還有人偷溜出去看星星' },
+        ]
+    },
+    {
+        id: 5, category: '[揪團]', title: '聚會前先來個小型聚餐？',
+        author: '建宏', date: '2026/03/28',
+        body: `大家好～
+
+想說同學會是六月，但好多人已經迫不及待想見面了。
+不如我們先約一個小型聚餐？
+
+時間：五月中左右
+地點：台北市區，看大家方便
+人數：先徵 10 個人左右
+
+有興趣的推一下，人數夠了我就來訂餐廳！`,
+        comments: [
+            { tag: '推', user: '美芳', content: '+1！提前暖身一下' },
+            { tag: '推', user: '志偉', content: '+1 我也要！' },
+        ]
+    }
+];
+
+// ===== BBS 功能 =====
+function bbsShowList() {
+    document.getElementById('bbsList').style.display = 'block';
+    document.getElementById('bbsArticle').classList.remove('show');
+    document.getElementById('bbsCompose').classList.remove('show');
+    document.querySelectorAll('.bbs-toolbar button').forEach((b, i) => b.classList.toggle('active', i === 0));
+}
+
+function bbsShowArticle(index) {
+    const a = bbsArticles[index];
+    const el = document.getElementById('bbsArticle');
+    let commentsHtml = a.comments.map(c =>
+        `<div class="bbs-comment"><span class="push-tag">${c.tag}</span><span class="push-userid">${c.user}</span><span class="push-content">: ${c.content}</span></div>`
+    ).join('');
+    el.innerHTML = `
+        <div class="bbs-article-header">
+            <div class="art-field"><span class="art-label">作者</span><span class="art-value">${a.author}</span></div>
+            <div class="art-field"><span class="art-label">標題</span><span class="art-value">${a.category} ${a.title}</span></div>
+            <div class="art-field"><span class="art-label">時間</span><span class="art-value">${a.date}</span></div>
+        </div>
+        <div class="bbs-article-body">${a.body}</div>
+        <div class="bbs-article-comments">${commentsHtml}</div>
+    `;
+    document.getElementById('bbsList').style.display = 'none';
+    el.classList.add('show');
+    document.getElementById('bbsCompose').classList.remove('show');
+}
+
+function bbsShowCompose() {
+    document.getElementById('bbsList').style.display = 'none';
+    document.getElementById('bbsArticle').classList.remove('show');
+    document.getElementById('bbsCompose').classList.add('show');
+    document.querySelectorAll('.bbs-toolbar button').forEach((b, i) => b.classList.toggle('active', i === 1));
+}
+
+function bbsPost() {
+    const nick = document.getElementById('bbsNickname').value.trim();
+    const subj = document.getElementById('bbsSubject').value.trim();
+    const body = document.getElementById('bbsBody').value.trim();
+    const cat = document.getElementById('bbsCategory').value;
+    if (!nick || !subj || !body) { showToast('請填寫完整資料！'); return; }
+
+    const now = new Date();
+    const dateStr = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+    const newArticle = {
+        id: bbsArticles.length + 1, category: cat, title: subj,
+        author: nick, date: now.toLocaleDateString('zh-TW'),
+        body: body, comments: []
+    };
+    bbsArticles.push(newArticle);
+
+    // 新增列表項
+    const listEl = document.getElementById('bbsList');
+    const postDiv = document.createElement('div');
+    postDiv.className = 'bbs-post';
+    postDiv.onclick = () => bbsShowArticle(bbsArticles.length - 1);
+    postDiv.innerHTML = `
+        <span class="post-id">${newArticle.id}</span>
+        <span class="post-push normal">0</span>
+        <span class="post-title"><span class="category">${cat}</span>${subj}</span>
+        <span class="post-author hide-mobile">${nick}</span>
+        <span class="post-date hide-mobile">${dateStr}</span>
+    `;
+    listEl.appendChild(postDiv);
+
+    // 清空表單
+    document.getElementById('bbsNickname').value = '';
+    document.getElementById('bbsSubject').value = '';
+    document.getElementById('bbsBody').value = '';
+    bbsShowList();
+    showToast('文章發表成功！');
+}
+
+// ===== 倒數計時 =====
+function updateCountdown() {
+    const target = new Date('2026-06-20T18:00:00+08:00');
+    const now = new Date();
+    const diff = target - now;
+    if (diff <= 0) {
+        document.getElementById('cd-days').textContent = '0';
+        document.getElementById('cd-hours').textContent = '0';
+        document.getElementById('cd-mins').textContent = '0';
+        document.getElementById('cd-secs').textContent = '0';
+        return;
+    }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    document.getElementById('cd-days').textContent = d;
+    document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
+    document.getElementById('cd-mins').textContent = String(m).padStart(2, '0');
+    document.getElementById('cd-secs').textContent = String(s).padStart(2, '0');
+    document.getElementById('daysLeft').textContent = d;
+}
+setInterval(updateCountdown, 1000);
+updateCountdown();
+
+// ===== 報名表單 =====
+let signupData = [];
+function handleSignup(e) {
+    e.preventDefault();
+    const data = {
+        name: document.getElementById('name').value,
+        classNum: document.getElementById('classNum').value,
+        phone: document.getElementById('phone').value,
+        email: document.getElementById('email').value,
+        event: document.getElementById('event').value,
+        guests: document.getElementById('guests').value,
+        diet: document.getElementById('diet').value,
+        message: document.getElementById('message').value,
+        time: new Date().toLocaleString('zh-TW')
+    };
+    signupData.push(data);
+    const count = parseInt(document.getElementById('signupCount').textContent) + 1;
+    document.getElementById('signupCount').textContent = count;
+    document.getElementById('signupForm').reset();
+    showToast(`${data.name}，報名成功！期待與你相見 🎉`);
+    console.log('報名資料：', data);
+}
+
+// ===== 照片上傳 =====
+const fileInput = document.getElementById('fileInput');
+const uploadArea = document.getElementById('uploadArea');
+const uploadPreview = document.getElementById('uploadPreview');
+let uploadedFiles = [];
+
+// 拖放上傳
+uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; });
+uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.style.borderColor = 'var(--border)';
+    handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+function handleFiles(files) {
+    Array.from(files).forEach(file => {
+        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+        uploadedFiles.push(file);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+            if (file.type.startsWith('image/')) {
+                div.innerHTML = `<img src="${e.target.result}" alt="${file.name}"><button class="remove-btn" onclick="removePreview(this)">✕</button>`;
+            } else {
+                div.innerHTML = `<video src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;"></video><button class="remove-btn" onclick="removePreview(this)">✕</button>`;
+            }
+            uploadPreview.appendChild(div);
+            uploadPreview.classList.add('show');
+
+            // 也加到照片牆
+            addToGallery(file.name, e.target.result, file.type.startsWith('video/'));
+        };
+        reader.readAsDataURL(file);
+    });
+    showToast(`已上傳 ${files.length} 個檔案！`);
+}
+
+function removePreview(btn) {
+    btn.parentElement.remove();
+    if (uploadPreview.children.length === 0) uploadPreview.classList.remove('show');
+}
+
+function addToGallery(name, src, isVideo) {
+    const grid = document.getElementById('galleryGrid');
+    const card = document.createElement('div');
+    card.className = 'gallery-card fade-in visible';
+    card.dataset.category = 'upload';
+    const now = new Date();
+    const dateStr = `${now.getFullYear()} 年 ${now.getMonth()+1} 月`;
+    if (isVideo) {
+        card.innerHTML = `
+            <video src="${src}" style="width:100%;height:220px;object-fit:cover;" controls></video>
+            <div class="photo-info">
+                <h4>${name}</h4>
+                <p>剛剛上傳的影片</p>
+                <div class="photo-meta"><span>📅 ${dateStr}</span><span>❤️ 0 讚</span></div>
+            </div>`;
+    } else {
+        card.innerHTML = `
+            <img src="${src}" style="width:100%;height:220px;object-fit:cover;cursor:pointer;" onclick="openLightbox('${src}')" alt="${name}">
+            <div class="photo-info">
+                <h4>${name}</h4>
+                <p>剛剛上傳的照片</p>
+                <div class="photo-meta"><span>📅 ${dateStr}</span><span>❤️ 0 讚</span></div>
+            </div>`;
+    }
+    grid.prepend(card);
+}
+
+function filterGallery(cat, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.gallery-card').forEach(card => {
+        if (cat === 'all') { card.style.display = ''; }
+        else { card.style.display = card.dataset.category === cat ? '' : 'none'; }
+    });
+}
+
+// ===== Lightbox =====
+function openLightbox(src) {
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('show');
+}
+
+// ===== Toast =====
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ===== 導覽列效果 =====
+const navbar = document.getElementById('navbar');
+window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// 漢堡選單
+document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+});
+document.querySelectorAll('.nav-links a').forEach(a => {
+    a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open'));
+});
+
+// ===== 捲動動畫 =====
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+// ===== 平滑捲動 =====
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
+
+// ===== BBS 時間顯示 =====
+function updateBbsTime() {
+    const now = new Date();
+    document.getElementById('bbsTime').textContent = now.toLocaleString('zh-TW');
+    document.getElementById('bbsOnline').textContent = 30 + Math.floor(Math.random() * 20);
+}
+setInterval(updateBbsTime, 5000);
+updateBbsTime();
+</script>
+</body>
+</html>
