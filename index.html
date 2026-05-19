@@ -327,6 +327,11 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(230, 126, 34, 0.4);
         }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
         .signup-note {
             text-align: center;
             margin-top: 1rem;
@@ -725,6 +730,7 @@
             transition: transform 0.4s ease;
             box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
+        .toast.error { background: #e74c3c; }
         .toast.show { transform: translateX(-50%) translateY(0); }
 
         /* ===== 手機版 RWD ===== */
@@ -788,6 +794,7 @@
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;600;700&family=Noto+Sans+Mono&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -871,7 +878,7 @@
         <p>填寫以下資料完成報名，期待與你相見！</p>
     </div>
     <div class="signup-stats fade-in">
-        <div class="stat-item"><span class="stat-num" id="signupCount">42</span><span class="stat-label">已報名人數</span></div>
+        <div class="stat-item"><span class="stat-num" id="signupCount">--</span><span class="stat-label">已報名人數</span></div>
         <div class="stat-item"><span class="stat-num">80</span><span class="stat-label">目標人數</span></div>
         <div class="stat-item"><span class="stat-num" id="daysLeft">--</span><span class="stat-label">報名倒數天</span></div>
     </div>
@@ -941,7 +948,7 @@
                 <label>給老同學的話</label>
                 <textarea id="message" rows="3" placeholder="想對大家說什麼呢？"></textarea>
             </div>
-            <button type="submit" class="btn-primary">確認報名 🎉</button>
+            <button type="submit" class="btn-primary" id="submitBtn">確認報名 🎉</button>
             <p class="signup-note">報名資料僅供聚會籌備使用，不會外洩。</p>
         </form>
     </div>
@@ -962,7 +969,7 @@
         <div class="bbs-toolbar">
             <button class="active" onclick="bbsShowList()">看板列表</button>
             <button onclick="bbsShowCompose()">發表文章 ✎</button>
-            <button onclick="bbsShowList()">重新整理</button>
+            <button onclick="bbsRefresh()">重新整理</button>
         </div>
         <!-- 文章列表 -->
         <div class="bbs-board-list" id="bbsList">
@@ -1193,10 +1200,25 @@
 </div>
 
 <script>
-// ===== BBS 資料 =====
+// ===== Supabase 初始化 =====
+const supabase = window.supabase.createClient(
+    'https://ltdfwyccinavhveouyjj.supabase.co',
+    'sb_publishable_tzcuH9Kj4jWzLdJY5E45mQ_9zz5rmHR'
+);
+
+// ===== HTML 跳脫（防 XSS）=====
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// ===== BBS 靜態備援資料 =====
 const bbsArticles = [
     {
-        id: 1, category: '[公告]', title: '40週年同學會確定舉辦！',
+        id: null, category: '[公告]', title: '40週年同學會確定舉辦！',
         author: '班長小明', date: '2026/04/01',
         body: `各位親愛的同學們：
 
@@ -1223,7 +1245,7 @@ const bbsArticles = [
         ]
     },
     {
-        id: 2, category: '[閒聊]', title: '大家還記得福利社的紅茶嗎',
+        id: null, category: '[閒聊]', title: '大家還記得福利社的紅茶嗎',
         author: '美芳', date: '2026/04/01',
         body: `不知道為什麼，今天突然好想念高中福利社的那杯紅茶。
 
@@ -1241,7 +1263,7 @@ const bbsArticles = [
         ]
     },
     {
-        id: 3, category: '[問題]', title: '有人知道阿國現在在哪嗎？',
+        id: null, category: '[問題]', title: '有人知道阿國現在在哪嗎？',
         author: '志偉', date: '2026/03/30',
         body: `想找當年隔壁座的阿國，畢業之後就失聯了。
 
@@ -1256,7 +1278,7 @@ const bbsArticles = [
         ]
     },
     {
-        id: 4, category: '[回憶]', title: '翻到了畢業旅行的照片！',
+        id: null, category: '[回憶]', title: '翻到了畢業旅行的照片！',
         author: '淑芬', date: '2026/03/29',
         body: `整理家裡的時候翻到一本舊相簿，
 裡面竟然有我們畢業旅行去墾丁的照片！
@@ -1275,7 +1297,7 @@ P.S. 大家都好年輕好青澀啊...`,
         ]
     },
     {
-        id: 5, category: '[揪團]', title: '聚會前先來個小型聚餐？',
+        id: null, category: '[揪團]', title: '聚會前先來個小型聚餐？',
         author: '建宏', date: '2026/03/28',
         body: `大家好～
 
@@ -1294,6 +1316,38 @@ P.S. 大家都好年輕好青澀啊...`,
     }
 ];
 
+// ===== BBS 狀態 =====
+let bbsPosts = [...bbsArticles];
+let isDbMode = false;
+
+// ===== BBS：渲染文章列表 =====
+function renderBbsList() {
+    const listEl = document.getElementById('bbsList');
+    const header = listEl.querySelector('.bbs-board-header');
+    listEl.innerHTML = '';
+    listEl.appendChild(header);
+
+    bbsPosts.forEach((post, index) => {
+        const cnt = Array.isArray(post.comments) ? post.comments.length : 0;
+        const pushClass = cnt >= 10 ? 'hot' : cnt >= 5 ? 'warm' : 'normal';
+        const pushText = cnt >= 100 ? '爆' : (cnt > 0 ? cnt : '');
+        const rawDate = post.date
+            ? post.date.slice(-5).replace('/', '/')
+            : (post.created_at ? new Date(post.created_at).toLocaleDateString('zh-TW').slice(-5) : '');
+        const postDiv = document.createElement('div');
+        postDiv.className = 'bbs-post';
+        postDiv.onclick = () => bbsShowArticle(index);
+        postDiv.innerHTML = `
+            <span class="post-id">${index + 1}</span>
+            <span class="post-push ${pushClass}">${escapeHtml(String(pushText))}</span>
+            <span class="post-title"><span class="category">${escapeHtml(post.category)}</span>${escapeHtml(post.title)}</span>
+            <span class="post-author hide-mobile">${escapeHtml(post.author)}</span>
+            <span class="post-date hide-mobile">${escapeHtml(rawDate)}</span>
+        `;
+        listEl.appendChild(postDiv);
+    });
+}
+
 // ===== BBS 功能 =====
 function bbsShowList() {
     document.getElementById('bbsList').style.display = 'block';
@@ -1302,20 +1356,55 @@ function bbsShowList() {
     document.querySelectorAll('.bbs-toolbar button').forEach((b, i) => b.classList.toggle('active', i === 0));
 }
 
-function bbsShowArticle(index) {
-    const a = bbsArticles[index];
+async function bbsShowArticle(index) {
+    const post = bbsPosts[index];
+    if (!post) return;
+    let comments = post.comments || [];
+
+    // 若已接上 DB，從 bbs_comments 即時讀取
+    if (isDbMode && post.id) {
+        try {
+            const { data, error } = await supabase
+                .from('bbs_comments')
+                .select('*')
+                .eq('post_id', post.id)
+                .order('created_at', { ascending: true });
+            if (!error && data) {
+                comments = data.map(c => ({
+                    tag: c.tag || '→',
+                    user: c.userid || '匿名',
+                    content: c.content
+                }));
+            }
+        } catch (e) { /* 使用 cache */ }
+    }
+
     const el = document.getElementById('bbsArticle');
-    let commentsHtml = a.comments.map(c =>
-        `<div class="bbs-comment"><span class="push-tag">${c.tag}</span><span class="push-userid">${c.user}</span><span class="push-content">: ${c.content}</span></div>`
-    ).join('');
+    const commentsHtml = comments.length
+        ? comments.map(c =>
+            `<div class="bbs-comment">` +
+            `<span class="push-tag">${escapeHtml(c.tag)}</span>` +
+            `<span class="push-userid">${escapeHtml(c.user)}</span>` +
+            `<span class="push-content">: ${escapeHtml(c.content)}</span>` +
+            `</div>`
+          ).join('')
+        : '<div style="color:var(--bbs-white);opacity:0.5;padding:0.5rem 0">尚無回應</div>';
+
+    const dateDisplay = post.date || (post.created_at
+        ? new Date(post.created_at).toLocaleString('zh-TW')
+        : '');
+
     el.innerHTML = `
         <div class="bbs-article-header">
-            <div class="art-field"><span class="art-label">作者</span><span class="art-value">${a.author}</span></div>
-            <div class="art-field"><span class="art-label">標題</span><span class="art-value">${a.category} ${a.title}</span></div>
-            <div class="art-field"><span class="art-label">時間</span><span class="art-value">${a.date}</span></div>
+            <div class="art-field"><span class="art-label">作者</span><span class="art-value">${escapeHtml(post.author)}</span></div>
+            <div class="art-field"><span class="art-label">標題</span><span class="art-value">${escapeHtml(post.category)} ${escapeHtml(post.title)}</span></div>
+            <div class="art-field"><span class="art-label">時間</span><span class="art-value">${escapeHtml(dateDisplay)}</span></div>
         </div>
-        <div class="bbs-article-body">${a.body}</div>
+        <div class="bbs-article-body">${escapeHtml(post.body)}</div>
         <div class="bbs-article-comments">${commentsHtml}</div>
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--bbs-border)">
+            <button class="bbs-submit" onclick="bbsShowList()">← 返回列表</button>
+        </div>
     `;
     document.getElementById('bbsList').style.display = 'none';
     el.classList.add('show');
@@ -1329,101 +1418,180 @@ function bbsShowCompose() {
     document.querySelectorAll('.bbs-toolbar button').forEach((b, i) => b.classList.toggle('active', i === 1));
 }
 
-function bbsPost() {
+async function bbsPost() {
     const nick = document.getElementById('bbsNickname').value.trim();
     const subj = document.getElementById('bbsSubject').value.trim();
     const body = document.getElementById('bbsBody').value.trim();
-    const cat = document.getElementById('bbsCategory').value;
-    if (!nick || !subj || !body) { showToast('請填寫完整資料！'); return; }
+    const cat  = document.getElementById('bbsCategory').value;
+    if (!nick || !subj || !body) { showToast('請填寫完整資料！', true); return; }
 
-    const now = new Date();
-    const dateStr = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-    const newArticle = {
-        id: bbsArticles.length + 1, category: cat, title: subj,
-        author: nick, date: now.toLocaleDateString('zh-TW'),
+    const newPost = {
+        id: null,
+        category: cat, title: subj, author: nick,
+        date: new Date().toLocaleDateString('zh-TW'),
         body: body, comments: []
     };
-    bbsArticles.push(newArticle);
 
-    // 新增列表項
-    const listEl = document.getElementById('bbsList');
-    const postDiv = document.createElement('div');
-    postDiv.className = 'bbs-post';
-    postDiv.onclick = () => bbsShowArticle(bbsArticles.length - 1);
-    postDiv.innerHTML = `
-        <span class="post-id">${newArticle.id}</span>
-        <span class="post-push normal">0</span>
-        <span class="post-title"><span class="category">${cat}</span>${subj}</span>
-        <span class="post-author hide-mobile">${nick}</span>
-        <span class="post-date hide-mobile">${dateStr}</span>
-    `;
-    listEl.appendChild(postDiv);
+    try {
+        const { data, error } = await supabase
+            .from('bbs_posts')
+            .insert({ category: cat, title: subj, author: nick, body: body,
+                       created_at: new Date().toISOString() })
+            .select()
+            .single();
+        if (error) throw error;
+        newPost.id = data.id;
+        isDbMode = true;
+    } catch (e) {
+        console.warn('BBS 發文儲存失敗，僅顯示於本機', e);
+    }
 
-    // 清空表單
+    bbsPosts.unshift(newPost);
+    renderBbsList();
     document.getElementById('bbsNickname').value = '';
-    document.getElementById('bbsSubject').value = '';
-    document.getElementById('bbsBody').value = '';
+    document.getElementById('bbsSubject').value  = '';
+    document.getElementById('bbsBody').value     = '';
     bbsShowList();
     showToast('文章發表成功！');
+}
+
+async function bbsRefresh() {
+    await loadBbsPosts();
+    bbsShowList();
+    showToast('已重新整理');
+}
+
+// 從 Supabase 載入 BBS 文章（失敗則保留靜態備援）
+async function loadBbsPosts() {
+    try {
+        const { data, error } = await supabase
+            .from('bbs_posts')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            isDbMode = true;
+            bbsPosts = data.map(p => ({
+                id: p.id,
+                category: p.category || '[閒聊]',
+                title: p.title,
+                author: p.author,
+                date: new Date(p.created_at).toLocaleDateString('zh-TW'),
+                body: p.body,
+                comments: []
+            }));
+            renderBbsList();
+        }
+    } catch (e) {
+        console.log('BBS 使用靜態備援資料');
+    }
 }
 
 // ===== 倒數計時 =====
 function updateCountdown() {
     const target = new Date('2026-06-20T18:00:00+08:00');
-    const now = new Date();
-    const diff = target - now;
+    const now    = new Date();
+    const diff   = target - now;
     if (diff <= 0) {
-        document.getElementById('cd-days').textContent = '0';
-        document.getElementById('cd-hours').textContent = '0';
-        document.getElementById('cd-mins').textContent = '0';
-        document.getElementById('cd-secs').textContent = '0';
+        ['cd-days','cd-hours','cd-mins','cd-secs'].forEach(id =>
+            document.getElementById(id).textContent = '0');
         return;
     }
     const d = Math.floor(diff / 86400000);
     const h = Math.floor((diff % 86400000) / 3600000);
     const m = Math.floor((diff % 3600000) / 60000);
     const s = Math.floor((diff % 60000) / 1000);
-    document.getElementById('cd-days').textContent = d;
+    document.getElementById('cd-days').textContent  = d;
     document.getElementById('cd-hours').textContent = String(h).padStart(2, '0');
-    document.getElementById('cd-mins').textContent = String(m).padStart(2, '0');
-    document.getElementById('cd-secs').textContent = String(s).padStart(2, '0');
+    document.getElementById('cd-mins').textContent  = String(m).padStart(2, '0');
+    document.getElementById('cd-secs').textContent  = String(s).padStart(2, '0');
     document.getElementById('daysLeft').textContent = d;
 }
 setInterval(updateCountdown, 1000);
 updateCountdown();
 
-// ===== 報名表單 =====
-let signupData = [];
-function handleSignup(e) {
-    e.preventDefault();
-    const data = {
-        name: document.getElementById('name').value,
-        classNum: document.getElementById('classNum').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
-        event: document.getElementById('event').value,
-        guests: document.getElementById('guests').value,
-        diet: document.getElementById('diet').value,
-        message: document.getElementById('message').value,
-        time: new Date().toLocaleString('zh-TW')
-    };
-    signupData.push(data);
-    const count = parseInt(document.getElementById('signupCount').textContent) + 1;
-    document.getElementById('signupCount').textContent = count;
-    document.getElementById('signupForm').reset();
-    showToast(`${data.name}，報名成功！期待與你相見 🎉`);
-    console.log('報名資料：', data);
+// ===== 報名：載入已報名人數 =====
+async function loadSignupCount() {
+    try {
+        const { count, error } = await supabase
+            .from('signups')
+            .select('*', { count: 'exact', head: true });
+        if (!error && count !== null) {
+            document.getElementById('signupCount').textContent = count;
+        }
+    } catch (e) {
+        document.getElementById('signupCount').textContent = '--';
+    }
 }
 
-// ===== 照片上傳 =====
-const fileInput = document.getElementById('fileInput');
-const uploadArea = document.getElementById('uploadArea');
-const uploadPreview = document.getElementById('uploadPreview');
-let uploadedFiles = [];
+// ===== 報名表單送出 =====
+async function handleSignup(e) {
+    e.preventDefault();
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '送出中...';
 
-// 拖放上傳
-uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; });
-uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = 'var(--border)'; });
+    const nameVal = document.getElementById('name').value;
+    const data = {
+        name:       nameVal,
+        class_num:  document.getElementById('classNum').value || null,
+        phone:      document.getElementById('phone').value,
+        email:      document.getElementById('email').value   || null,
+        event_type: document.getElementById('event').value,
+        guests:     parseInt(document.getElementById('guests').value),
+        diet:       document.getElementById('diet').value,
+        message:    document.getElementById('message').value || null,
+        created_at: new Date().toISOString()
+    };
+
+    try {
+        const { error } = await supabase.from('signups').insert(data);
+        if (error) throw error;
+        await loadSignupCount();
+    } catch (e) {
+        console.warn('報名儲存失敗，本機計數', e);
+        const cur = parseInt(document.getElementById('signupCount').textContent) || 0;
+        document.getElementById('signupCount').textContent = cur + 1;
+    }
+
+    document.getElementById('signupForm').reset();
+    btn.disabled = false;
+    btn.textContent = '確認報名 🎉';
+    showToast(`${nameVal}，報名成功！期待與你相見 🎉`);
+}
+
+// ===== 照片：上傳到 Supabase Storage =====
+async function uploadToSupabase(file) {
+    const ext      = file.name.split('.').pop().toLowerCase();
+    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(filename, file, { cacheControl: '3600', upsert: false });
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+        .from('photos')
+        .getPublicUrl(filename);
+
+    await supabase.from('gallery_photos').insert({
+        filename:   file.name,
+        url:        publicUrl,
+        category:   'upload',
+        created_at: new Date().toISOString()
+    });
+
+    return publicUrl;
+}
+
+// ===== 照片上傳處理 =====
+const fileInput    = document.getElementById('fileInput');
+const uploadArea   = document.getElementById('uploadArea');
+const uploadPreview = document.getElementById('uploadPreview');
+
+uploadArea.addEventListener('dragover',  (e) => { e.preventDefault(); uploadArea.style.borderColor = 'var(--accent)'; });
+uploadArea.addEventListener('dragleave', ()  => { uploadArea.style.borderColor = 'var(--border)'; });
 uploadArea.addEventListener('drop', (e) => {
     e.preventDefault();
     uploadArea.style.borderColor = 'var(--border)';
@@ -1431,28 +1599,41 @@ uploadArea.addEventListener('drop', (e) => {
 });
 fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 
-function handleFiles(files) {
-    Array.from(files).forEach(file => {
-        if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
-        uploadedFiles.push(file);
+async function handleFiles(files) {
+    const fileArr = Array.from(files).filter(f =>
+        f.type.startsWith('image/') || f.type.startsWith('video/'));
+    if (!fileArr.length) return;
+    showToast(`正在上傳 ${fileArr.length} 個檔案...`);
+
+    fileArr.forEach(file => {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (ev) => {
+            const localSrc = ev.target.result;
+            const isVideo  = file.type.startsWith('video/');
+
+            // 立即顯示本機預覽
             const div = document.createElement('div');
             div.className = 'preview-item';
-            if (file.type.startsWith('image/')) {
-                div.innerHTML = `<img src="${e.target.result}" alt="${file.name}"><button class="remove-btn" onclick="removePreview(this)">✕</button>`;
-            } else {
-                div.innerHTML = `<video src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;"></video><button class="remove-btn" onclick="removePreview(this)">✕</button>`;
-            }
+            div.innerHTML = isVideo
+                ? `<video src="${localSrc}" style="width:100%;height:100%;object-fit:cover;"></video><button class="remove-btn" onclick="removePreview(this)">✕</button>`
+                : `<img src="${localSrc}" alt="${escapeHtml(file.name)}"><button class="remove-btn" onclick="removePreview(this)">✕</button>`;
             uploadPreview.appendChild(div);
             uploadPreview.classList.add('show');
 
-            // 也加到照片牆
-            addToGallery(file.name, e.target.result, file.type.startsWith('video/'));
+            // 上傳到 Supabase（圖片才上傳）
+            let displaySrc = localSrc;
+            if (!isVideo) {
+                try {
+                    displaySrc = await uploadToSupabase(file);
+                    showToast(`${file.name} 上傳成功！`);
+                } catch (err) {
+                    console.warn('上傳失敗，使用本機預覽', err);
+                }
+            }
+            addToGallery(file.name, displaySrc, isVideo);
         };
         reader.readAsDataURL(file);
     });
-    showToast(`已上傳 ${files.length} 個檔案！`);
 }
 
 function removePreview(btn) {
@@ -1460,39 +1641,61 @@ function removePreview(btn) {
     if (uploadPreview.children.length === 0) uploadPreview.classList.remove('show');
 }
 
-function addToGallery(name, src, isVideo) {
+function addToGallery(name, src, isVideo, category) {
+    const cat  = category || 'upload';
     const grid = document.getElementById('galleryGrid');
     const card = document.createElement('div');
     card.className = 'gallery-card fade-in visible';
-    card.dataset.category = 'upload';
-    const now = new Date();
-    const dateStr = `${now.getFullYear()} 年 ${now.getMonth()+1} 月`;
+    card.dataset.category = cat;
+    const now     = new Date();
+    const dateStr = `${now.getFullYear()} 年 ${now.getMonth() + 1} 月`;
+    const safeSrc = src.replace(/'/g, '%27');
+
     if (isVideo) {
         card.innerHTML = `
-            <video src="${src}" style="width:100%;height:220px;object-fit:cover;" controls></video>
+            <video src="${safeSrc}" style="width:100%;height:220px;object-fit:cover;" controls></video>
             <div class="photo-info">
-                <h4>${name}</h4>
-                <p>剛剛上傳的影片</p>
+                <h4>${escapeHtml(name)}</h4>
+                <p>上傳的影片</p>
                 <div class="photo-meta"><span>📅 ${dateStr}</span><span>❤️ 0 讚</span></div>
             </div>`;
     } else {
         card.innerHTML = `
-            <img src="${src}" style="width:100%;height:220px;object-fit:cover;cursor:pointer;" onclick="openLightbox('${src}')" alt="${name}">
+            <img src="${safeSrc}" style="width:100%;height:220px;object-fit:cover;cursor:pointer;"
+                 onclick="openLightbox('${safeSrc}')" alt="${escapeHtml(name)}">
             <div class="photo-info">
-                <h4>${name}</h4>
-                <p>剛剛上傳的照片</p>
+                <h4>${escapeHtml(name)}</h4>
+                <p>同學上傳的照片</p>
                 <div class="photo-meta"><span>📅 ${dateStr}</span><span>❤️ 0 讚</span></div>
             </div>`;
     }
     grid.prepend(card);
 }
 
+// 載入已上傳照片
+async function loadGallery() {
+    try {
+        const { data, error } = await supabase
+            .from('gallery_photos')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(20);
+        if (error) throw error;
+        if (data && data.length > 0) {
+            data.forEach(photo => {
+                addToGallery(photo.filename || '照片', photo.url, false, photo.category || 'upload');
+            });
+        }
+    } catch (e) {
+        console.log('照片庫使用靜態備援');
+    }
+}
+
 function filterGallery(cat, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.querySelectorAll('.gallery-card').forEach(card => {
-        if (cat === 'all') { card.style.display = ''; }
-        else { card.style.display = card.dataset.category === cat ? '' : 'none'; }
+        card.style.display = (cat === 'all' || card.dataset.category === cat) ? '' : 'none';
     });
 }
 
@@ -1506,20 +1709,19 @@ function closeLightbox() {
 }
 
 // ===== Toast =====
-function showToast(msg) {
+function showToast(msg, isError) {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.classList.toggle('error', !!isError);
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ===== 導覽列效果 =====
+// ===== 導覽列 =====
 const navbar = document.getElementById('navbar');
 window.addEventListener('scroll', () => {
     navbar.classList.toggle('scrolled', window.scrollY > 50);
 });
-
-// 漢堡選單
 document.getElementById('hamburger').addEventListener('click', () => {
     document.getElementById('navLinks').classList.toggle('open');
 });
@@ -1545,11 +1747,20 @@ document.querySelectorAll('a[href^="#"]').forEach(a => {
 // ===== BBS 時間顯示 =====
 function updateBbsTime() {
     const now = new Date();
-    document.getElementById('bbsTime').textContent = now.toLocaleString('zh-TW');
-    document.getElementById('bbsOnline').textContent = 30 + Math.floor(Math.random() * 20);
+    document.getElementById('bbsTime').textContent    = now.toLocaleString('zh-TW');
+    document.getElementById('bbsOnline').textContent  = 30 + Math.floor(Math.random() * 20);
 }
 setInterval(updateBbsTime, 5000);
 updateBbsTime();
+
+// ===== 頁面初始化：並行載入三項資料 =====
+(async function init() {
+    await Promise.all([
+        loadSignupCount(),
+        loadBbsPosts(),
+        loadGallery()
+    ]);
+})();
 </script>
 </body>
 </html>
