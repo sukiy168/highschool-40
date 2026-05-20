@@ -1200,11 +1200,18 @@
 </div>
 
 <script>
-// ===== Supabase 初始化 =====
-const supabase = window.supabase.createClient(
-    'https://ltdfwyccinavhveouyjj.supabase.co',
-    'sb_publishable_tzcuH9Kj4jWzLdJY5E45mQ_9zz5rmHR'
-);
+// ===== Supabase 初始化（容錯：失敗時以靜態模式繼續）=====
+let supabase = null;
+try {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+        supabase = window.supabase.createClient(
+            'https://ltdfwyccinavhveouyjj.supabase.co',
+            'sb_publishable_tzcuH9Kj4jWzLdJY5E45mQ_9zz5rmHR'
+        );
+    }
+} catch (e) {
+    console.warn('Supabase 初始化失敗，頁面以靜態模式運行', e);
+}
 
 // ===== HTML 跳脫（防 XSS）=====
 function escapeHtml(str) {
@@ -1362,7 +1369,7 @@ async function bbsShowArticle(index) {
     let comments = post.comments || [];
 
     // 若已接上 DB，從 bbs_comments 即時讀取
-    if (isDbMode && post.id) {
+    if (isDbMode && post.id && supabase) {
         try {
             const { data, error } = await supabase
                 .from('bbs_comments')
@@ -1433,6 +1440,7 @@ async function bbsPost() {
     };
 
     try {
+        if (!supabase) throw new Error('靜態模式');
         const { data, error } = await supabase
             .from('bbs_posts')
             .insert({ category: cat, title: subj, author: nick, body: body,
@@ -1463,6 +1471,7 @@ async function bbsRefresh() {
 
 // 從 Supabase 載入 BBS 文章（失敗則保留靜態備援）
 async function loadBbsPosts() {
+    if (!supabase) return;
     try {
         const { data, error } = await supabase
             .from('bbs_posts')
@@ -1513,15 +1522,18 @@ updateCountdown();
 
 // ===== 報名：載入已報名人數 =====
 async function loadSignupCount() {
+    if (!supabase) { document.getElementById('signupCount').textContent = '0'; return; }
     try {
         const { count, error } = await supabase
             .from('signups')
             .select('*', { count: 'exact', head: true });
         if (!error && count !== null) {
             document.getElementById('signupCount').textContent = count;
+        } else {
+            document.getElementById('signupCount').textContent = '0';
         }
     } catch (e) {
-        document.getElementById('signupCount').textContent = '--';
+        document.getElementById('signupCount').textContent = '0';
     }
 }
 
@@ -1546,6 +1558,7 @@ async function handleSignup(e) {
     };
 
     try {
+        if (!supabase) throw new Error('靜態模式');
         const { error } = await supabase.from('signups').insert(data);
         if (error) throw error;
         await loadSignupCount();
@@ -1563,6 +1576,7 @@ async function handleSignup(e) {
 
 // ===== 照片：上傳到 Supabase Storage =====
 async function uploadToSupabase(file) {
+    if (!supabase) throw new Error('Supabase 未初始化');
     const ext      = file.name.split('.').pop().toLowerCase();
     const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
@@ -1674,6 +1688,7 @@ function addToGallery(name, src, isVideo, category) {
 
 // 載入已上傳照片
 async function loadGallery() {
+    if (!supabase) return;
     try {
         const { data, error } = await supabase
             .from('gallery_photos')
