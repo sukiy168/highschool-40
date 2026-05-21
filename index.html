@@ -1202,23 +1202,47 @@
     <img id="lightboxImg" src="" alt="">
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ===== 頁面永遠可見（防止 JS 錯誤導致空白）=====
 document.documentElement.classList.add('js-loaded');
 
-// ===== Supabase 初始化（容錯：失敗時以靜態模式繼續）=====
-let supabase = null;
-try {
-    if (window.supabase && typeof window.supabase.createClient === 'function') {
-        supabase = window.supabase.createClient(
-            'https://ltdfwyccinavhveouyjj.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0ZGZ3eWNjaW5hdmh2ZW91eWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDE2NzMsImV4cCI6MjA5NDU3NzY3M30.zb4T2n_PjJgg4x97U-bZtrmjZcCclzCC60KCyJSUgc4'
-        );
+// ===== Supabase REST API（直接 fetch，無需 CDN）=====
+const SUPA_URL = 'https://ltdfwyccinavhveouyjj.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx0ZGZ3eWNjaW5hdmh2ZW91eWpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMDE2NzMsImV4cCI6MjA5NDU3NzY3M30.zb4T2n_PjJgg4x97U-bZtrmjZcCclzCC60KCyJSUgc4';
+const db = {
+    h: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': 'application/json' },
+    async insert(table, data, ret) {
+        const r = await fetch(SUPA_URL + '/rest/v1/' + table, {
+            method: 'POST',
+            headers: Object.assign({}, this.h, { 'Prefer': ret ? 'return=representation' : 'return=minimal' }),
+            body: JSON.stringify(data)
+        });
+        if (!r.ok) throw new Error(await r.text());
+        return ret ? (await r.json())[0] : null;
+    },
+    async select(table, qs) {
+        const r = await fetch(SUPA_URL + '/rest/v1/' + table + '?' + (qs || ''), { headers: this.h });
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
+    },
+    async count(table) {
+        const r = await fetch(SUPA_URL + '/rest/v1/' + table + '?select=id', {
+            headers: Object.assign({}, this.h, { 'Prefer': 'count=exact', 'Range': '0-0' })
+        });
+        if (!r.ok) return 0;
+        const cr = r.headers.get('Content-Range') || '';
+        return parseInt(cr.split('/')[1]) || 0;
+    },
+    async upload(bucket, filename, file) {
+        const r = await fetch(SUPA_URL + '/storage/v1/object/' + bucket + '/' + filename, {
+            method: 'POST',
+            headers: { 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY, 'Content-Type': file.type || 'application/octet-stream' },
+            body: file
+        });
+        if (!r.ok) throw new Error(await r.text());
+        return SUPA_URL + '/storage/v1/object/public/' + bucket + '/' + filename;
     }
-} catch (e) {
-    console.warn('Supabase 初始化失敗，頁面以靜態模式運行', e);
-}
+};
 
 // ===== HTML 跳脫（防 XSS）=====
 function escapeHtml(str) {
@@ -1376,14 +1400,10 @@ async function bbsShowArticle(index) {
     let comments = post.comments || [];
 
     // 若已接上 DB，從 bbs_comments 即時讀取
-    if (isDbMode && post.id && supabase) {
+    if (isDbMode && post.id) {
         try {
-            const { data, error } = await supabase
-                .from('bbs_comments')
-                .select('*')
-                .eq('post_id', post.id)
-                .order('created_at', { ascending: true });
-            if (!error && data) {
+            const data = await db.select('bbs_comments', 'select=*&post_id=eq.' + post.id + '&order=created_at.asc');
+            if (data) {
                 comments = data.map(c => ({
                     tag: c.tag || '→',
                     user: c.userid || '匿名',
@@ -1447,16 +1467,11 @@ async function bbsPost() {
     };
 
     try {
-        if (!supabase) throw new Error('靜態模式');
-        const { data, error } = await supabase
-            .from('bbs_posts')
-            .insert({ category: cat, title: subj, author: nick, body: body,
-                       created_at: new Date().toISOString() })
-            .select()
-            .single();
-        if (error) throw error;
-        newPost.id = data.id;
-        isDbMode = true;
+        const data = await db.insert('bbs_posts', {
+            category: cat, title: subj, author: nick, body: body,
+            created_at: new Date().toISOString()
+        }, true);
+        if (data) { newPost.id = data.id; isDbMode = true; }
     } catch (e) {
         console.warn('BBS 發文儲存失敗，僅顯示於本機', e);
     }
@@ -1478,14 +1493,8 @@ async function bbsRefresh() {
 
 // 從 Supabase 載入 BBS 文章（失敗則保留靜態備援）
 async function loadBbsPosts() {
-    if (!supabase) return;
     try {
-        const { data, error } = await supabase
-            .from('bbs_posts')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(50);
-        if (error) throw error;
+        const data = await db.select('bbs_posts', 'select=*&order=created_at.desc&limit=50');
         if (data && data.length > 0) {
             isDbMode = true;
             bbsPosts = data.map(p => ({
@@ -1529,16 +1538,9 @@ updateCountdown();
 
 // ===== 報名：載入已報名人數 =====
 async function loadSignupCount() {
-    if (!supabase) { document.getElementById('signupCount').textContent = '0'; return; }
     try {
-        const { count, error } = await supabase
-            .from('signups')
-            .select('*', { count: 'exact', head: true });
-        if (!error && count !== null) {
-            document.getElementById('signupCount').textContent = count;
-        } else {
-            document.getElementById('signupCount').textContent = '0';
-        }
+        const count = await db.count('signups');
+        document.getElementById('signupCount').textContent = count;
     } catch (e) {
         document.getElementById('signupCount').textContent = '0';
     }
@@ -1565,9 +1567,7 @@ async function handleSignup(e) {
     };
 
     try {
-        if (!supabase) throw new Error('靜態模式');
-        const { error } = await supabase.from('signups').insert(data);
-        if (error) throw error;
+        await db.insert('signups', data);
         await loadSignupCount();
     } catch (e) {
         console.warn('報名儲存失敗，本機計數', e);
@@ -1583,26 +1583,15 @@ async function handleSignup(e) {
 
 // ===== 照片：上傳到 Supabase Storage =====
 async function uploadToSupabase(file) {
-    if (!supabase) throw new Error('Supabase 未初始化');
     const ext      = file.name.split('.').pop().toLowerCase();
-    const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-        .from('photos')
-        .upload(filename, file, { cacheControl: '3600', upsert: false });
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-        .from('photos')
-        .getPublicUrl(filename);
-
-    await supabase.from('gallery_photos').insert({
+    const filename = Date.now() + '_' + Math.random().toString(36).slice(2) + '.' + ext;
+    const publicUrl = await db.upload('photos', filename, file);
+    await db.insert('gallery_photos', {
         filename:   file.name,
         url:        publicUrl,
         category:   'upload',
         created_at: new Date().toISOString()
     });
-
     return publicUrl;
 }
 
@@ -1695,14 +1684,8 @@ function addToGallery(name, src, isVideo, category) {
 
 // 載入已上傳照片
 async function loadGallery() {
-    if (!supabase) return;
     try {
-        const { data, error } = await supabase
-            .from('gallery_photos')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(20);
-        if (error) throw error;
+        const data = await db.select('gallery_photos', 'select=*&order=created_at.desc&limit=20');
         if (data && data.length > 0) {
             data.forEach(photo => {
                 addToGallery(photo.filename || '照片', photo.url, false, photo.category || 'upload');
